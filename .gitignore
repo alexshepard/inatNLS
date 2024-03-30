@@ -93,3 +93,5 @@ ENV/
 
 # Visual Studio Code stuff
 .vscode/
+
+images/
