@@ -67,7 +67,18 @@ class Search:
                 CONFIG["IMAGE_CACHE"], document["photo_id"]
             )
 
-            # if we don't have the image, skip it
+            # if we don't have the image, try to download it
+            photo_url = CONFIG["BASE_IMAGE_URL"].format(
+                document["photo_id"], document["extension"]
+            )
+            if not os.path.exists(local_path):
+                r = requests.get(photo_url)
+                if r.status_code == 200:
+                    with open(filelocal_pathname, "wb") as fd:
+                        for chunk in r.iter_content(chunk_size=128):
+                            fd.write(chunk)
+
+            # if we still don't have the image, skip it
             if not os.path.exists(local_path):
                 print("skipping {}".format(local_path))
                 continue
