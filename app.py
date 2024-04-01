@@ -6,6 +6,7 @@ app = Flask(__name__)
 es = Search()
 
 es_index_name = "inat_photos"
+
 iconic_taxa = {
     "48460": "Life",
     "48460/1/2/355675/20978": "Amphibians",
@@ -67,7 +68,7 @@ def handle_search():
             "field": "embedding",
             "query_vector": query_vector,
             "k": 10,
-            "num_candidates": 50,
+            "num_candidates": 100,
             **filters,
         },
         size=10,
