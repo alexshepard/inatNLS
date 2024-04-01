@@ -65,7 +65,9 @@ class Search:
             photo_url = CONFIG["BASE_IMAGE_URL"].format(
                 document["photo_id"], document["extension"]
             )
+
             if not os.path.exists(local_path):
+                os.makedirs(os.path.dirname(local_path), exist_ok=True)
                 r = requests.get(photo_url)
                 if r.status_code == 200:
                     with open(filelocal_pathname, "wb") as fd:
