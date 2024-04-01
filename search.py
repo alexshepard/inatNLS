@@ -70,7 +70,7 @@ class Search:
                 os.makedirs(os.path.dirname(local_path), exist_ok=True)
                 r = requests.get(photo_url)
                 if r.status_code == 200:
-                    with open(filelocal_pathname, "wb") as fd:
+                    with open(local_path, "wb") as fd:
                         for chunk in r.iter_content(chunk_size=128):
                             fd.write(chunk)
 
