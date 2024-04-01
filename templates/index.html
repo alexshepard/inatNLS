@@ -63,9 +63,15 @@
             style="width: 100%; max-height: 140px; object-fit: none; object-position: center;" />
         <div class="card-body">
             <small>
-                Taxon Name: {{ result._source.taxon_name }}
+                Taxon Name:
+                <a href="https://www.inaturalist.org/taxa/{{ result._source.taxon_id }}">
+                    {{ result._source.taxon_name }}
+                </a>
                 <br />
-                Photographer: {{ result._source.observer_login }}
+                Photographer:
+                <a href="https://www.inaturalist.org/users/{{ result._source.observer_login }}">
+                    {{ result._source.observer_login }}
+                </a>
                 <br />
                 {% if result._score %}<i>(Score: {{ result._score }})</i>{% endif %}
             </small>
