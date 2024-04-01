@@ -1,20 +1,14 @@
-import json
-from pprint import pprint
 import os
-import time
 import csv
 import logging
 from pathlib import Path
 import hashlib
 
-from dotenv import load_dotenv
 from elasticsearch import Elasticsearch
 from sentence_transformers import SentenceTransformer
 from PIL import Image
 import requests
 from tqdm.auto import tqdm
-
-load_dotenv()
 
 # move to yaml
 CONFIG = {
