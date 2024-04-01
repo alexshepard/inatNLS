@@ -20,7 +20,7 @@ load_dotenv()
 CONFIG = {
     "CLIP_MODEL": "clip-ViT-B-32",
     "BASE_IMAGE_URL": "https://inaturalist-open-data.s3.amazonaws.com/photos/{}/medium.{}",
-    "DATA_FILE": "complete_100k_obs_sample.csv",
+    "DATA_FILE": "complete_1k_obs_sample.csv",
     "IMAGE_CACHE": "images/",
     "INSERT_BATCH_SIZE": 200,
 }
