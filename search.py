@@ -14,8 +14,7 @@ from tqdm.auto import tqdm
 CONFIG = {
     "CLIP_MODEL": "clip-ViT-B-32",
     "BASE_IMAGE_URL": "https://inaturalist-open-data.s3.amazonaws.com/photos/{}/medium.{}",
-    "DATA_FILE": "complete_1k_obs_sample.csv",
-    "IMAGE_CACHE": "images/",
+    "IMAGE_CACHE": "/data-ssd2/alex/images/",
     "INSERT_BATCH_SIZE": 200,
 }
 
@@ -34,9 +33,11 @@ class Search:
             logging.getLogger(key).disabled = True
 
         return self.model.encode(text)
+    
+    def delete_index(self, index_name):
+        self.es.indices.delete(index=index_name, ignore_unavailable=True)
 
     def create_index(self, index_name):
-        self.es.indices.delete(index=index_name, ignore_unavailable=True)
         self.es.indices.create(
             index=index_name,
             mappings={
@@ -86,9 +87,8 @@ class Search:
             operations.append({**document, "embedding": img_emb})
         return self.es.bulk(operations=operations)
 
-    def reindex(self, index_name):
-        self.create_index(index_name)
-        with open(CONFIG["DATA_FILE"]) as csvfile:
+    def append_to_index(self, index_name, data_file):
+        with open(data_file) as csvfile:
             csvreader = csv.DictReader(csvfile)
             documents = []
             for row in csvreader:

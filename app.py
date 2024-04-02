@@ -1,3 +1,4 @@
+import click
 from flask import Flask, render_template, request
 
 from search import Search
@@ -91,6 +92,18 @@ def handle_search():
 
 
 @app.cli.command()
-def reindex():
-    """Regenerate the Elasticsearch index."""
-    es.reindex(es_index_name)
+def delete_index():
+    """Delete the elasticsearch index."""
+    es.delete_index(es_index_name)
+
+@app.cli.command()
+def create_index():
+    """Create the elasticsearch index."""
+    es.create_index(es_index_name)
+
+@app.cli.command()
+@click.argument("filename", required=True)
+def append_to_index(filename):
+    """Add new data to elasticsearch index."""
+    es.append_to_index(es_index_name, filename)
+
