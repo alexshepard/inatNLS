@@ -6,12 +6,14 @@ from pathlib import Path
 import yaml
 
 from elasticsearch import Elasticsearch
-from sentence_transformers import SentenceTransformer
+import numpy as np
 from PIL import Image
 import requests
+from sentence_transformers import SentenceTransformer
 from tqdm.auto import tqdm
 
 CONFIG = yaml.safe_load(open("config.yml"))
+
 
 class Search:
     def __init__(self):
@@ -29,7 +31,7 @@ class Search:
             logging.getLogger(key).disabled = True
 
         return self.model.encode(text)
-    
+
     def delete_index(self, index_name):
         self.es.indices.delete(index=index_name, ignore_unavailable=True)
 
@@ -51,15 +53,19 @@ class Search:
             document={**document, "embedding": self.get_embedding(document["summary"])},
         )
 
-    def insert_documents(self, documents, index_name):
+    def insert_documents(self, documents, index_name, pbar):
+        batch_insert_times = []
+
         operations = []
-        for document in tqdm(documents):
+        for document in documents:
             local_path = self.path_for_photo_id(
                 CONFIG["image_cache_dir"], document["photo_id"]
             )
 
             # if we don't have the image, try to download it
-            image_base_url = "https://inaturalist-open-data.s3.amazonaws.com/photos/{}/medium.{}"
+            image_base_url = (
+                "https://inaturalist-open-data.s3.amazonaws.com/photos/{}/medium.{}"
+            )
             photo_url = image_base_url.format(
                 document["photo_id"], document["extension"]
             )
@@ -82,9 +88,18 @@ class Search:
             img_emb = self.get_embedding(img)
             operations.append({"index": {"_index": index_name}})
             operations.append({**document, "embedding": img_emb})
+
+            pbar.update(1)
+
         return self.es.bulk(operations=operations)
 
     def add_to_index(self, index_name, data_file):
+        batch_insert_times = []
+
+        with open(data_file, "r") as file:
+            num_docs = len(file.readlines()) - 1
+
+        pbar = tqdm(total=num_docs)
         with open(data_file) as csvfile:
             csvreader = csv.DictReader(csvfile)
             documents = []
@@ -93,16 +108,21 @@ class Search:
 
                 # insert in batches
                 if len(documents) == CONFIG["insert_batch_size"]:
-                    response = self.insert_documents(documents, index_name)
-                    print(
-                        "Index with {} documents created in {} milliseconds".format(
-                            len(response["items"]), response["took"]
-                        )
-                    )
+                    response = self.insert_documents(documents, index_name, pbar)
+                    batch_insert_times.append(response["took"])
                     documents = []
 
         # insert anything at the end
-        response = self.insert_documents(documents, index_name)
+        response = self.insert_documents(documents, index_name, pbar)
+        batch_insert_times.append(response["took"])
+
+        pbar.close()
+
+        print(
+            "indexed {} documents in {} batches with an average of {} ms per batch".format(
+                num_docs, len(batch_insert_times), np.mean(batch_insert_times)
+            )
+        )
         print(
             "Index with {} documents created in {} milliseconds".format(
                 len(response["items"]), response["took"]
