@@ -1,8 +1,9 @@
-import os
 import csv
-import logging
-from pathlib import Path
 import hashlib
+import logging
+import os
+from pathlib import Path
+import yaml
 
 from elasticsearch import Elasticsearch
 from sentence_transformers import SentenceTransformer
@@ -10,25 +11,20 @@ from PIL import Image
 import requests
 from tqdm.auto import tqdm
 
-# move to yaml
-CONFIG = {
-    "CLIP_MODEL": "clip-ViT-B-32",
-    "BASE_IMAGE_URL": "https://inaturalist-open-data.s3.amazonaws.com/photos/{}/medium.{}",
-    "IMAGE_CACHE": "/data-ssd2/alex/images/",
-    "INSERT_BATCH_SIZE": 200,
-}
-
+CONFIG = yaml.safe_load(open("config.yml"))
 
 class Search:
     def __init__(self):
-        self.model = SentenceTransformer(CONFIG["CLIP_MODEL"])
+        self.model = SentenceTransformer(CONFIG["model_name"])
         self.es = Elasticsearch("http://localhost:9200")
-        self.image_cache_path = Path(CONFIG["IMAGE_CACHE"])
+        self.image_cache_path = Path(CONFIG["image_cache_dir"])
         os.makedirs(self.image_cache_path, exist_ok=True)
         client_info = self.es.info()
         print("Connected to Elasticsearch!")
 
     def get_embedding(self, text):
+        # this is ugly but otherwise pytorch is logging constantly
+        # haven't been able to track down which logger to disable
         for key in logging.Logger.manager.loggerDict:
             logging.getLogger(key).disabled = True
 
@@ -59,11 +55,12 @@ class Search:
         operations = []
         for document in tqdm(documents):
             local_path = self.path_for_photo_id(
-                CONFIG["IMAGE_CACHE"], document["photo_id"]
+                CONFIG["image_cache_dir"], document["photo_id"]
             )
 
             # if we don't have the image, try to download it
-            photo_url = CONFIG["BASE_IMAGE_URL"].format(
+            image_base_url = "https://inaturalist-open-data.s3.amazonaws.com/photos/{}/medium.{}"
+            photo_url = image_base_url.format(
                 document["photo_id"], document["extension"]
             )
 
@@ -87,7 +84,7 @@ class Search:
             operations.append({**document, "embedding": img_emb})
         return self.es.bulk(operations=operations)
 
-    def append_to_index(self, index_name, data_file):
+    def add_to_index(self, index_name, data_file):
         with open(data_file) as csvfile:
             csvreader = csv.DictReader(csvfile)
             documents = []
@@ -95,7 +92,7 @@ class Search:
                 documents.append(row)
 
                 # insert in batches
-                if len(documents) == CONFIG["INSERT_BATCH_SIZE"]:
+                if len(documents) == CONFIG["insert_batch_size"]:
                     response = self.insert_documents(documents, index_name)
                     print(
                         "Index with {} documents created in {} milliseconds".format(

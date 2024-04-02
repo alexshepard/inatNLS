@@ -1,0 +1,9 @@
+es_index_name: "inat-photos-index"
+model_name: "clip-ViT-B-32"
+image_cache_dir: "/data-ssd2/alex/images"
+insert_batch_size: 200
+
+KNN:
+  k: 10
+  num_candidates: 100
+

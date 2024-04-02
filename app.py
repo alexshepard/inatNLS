@@ -1,12 +1,13 @@
 import click
 from flask import Flask, render_template, request
+import yaml
 
 from search import Search
 
+CONFIG = yaml.safe_load(open("config.yml"))
+
 app = Flask(__name__)
 es = Search()
-
-es_index_name = "inat_photos"
 
 iconic_taxa = {
     "48460": "Life",
@@ -64,15 +65,15 @@ def handle_search():
         )
 
     results = es.search(
-        index_name=es_index_name,
+        index_name=CONFIG["es_index_name"],
         knn={
             "field": "embedding",
             "query_vector": query_vector,
-            "k": 10,
-            "num_candidates": 100,
+            "k": CONFIG["knn"]["k"],
+            "num_candidates": CONFIG["knn"]["num_candidates"],
             **filters,
         },
-        size=10,
+        size=CONFIG["knn"]["k"],
         from_=0,
     )
 
@@ -94,16 +95,16 @@ def handle_search():
 @app.cli.command()
 def delete_index():
     """Delete the elasticsearch index."""
-    es.delete_index(es_index_name)
+    es.delete_index(CONFIG["es_index_name"])
 
 @app.cli.command()
 def create_index():
     """Create the elasticsearch index."""
-    es.create_index(es_index_name)
+    es.create_index(CONFIG["es_index_name"])
 
 @app.cli.command()
 @click.argument("filename", required=True)
-def append_to_index(filename):
+def add_to_index(filename):
     """Add new data to elasticsearch index."""
-    es.append_to_index(es_index_name, filename)
+    es.add_to_index(CONFIG["es_index_name"], filename)
 
