@@ -60,6 +60,7 @@ def handle_search():
     if continent != "" and continent != "Worldwide":
         filters["filter"].append({"term": {"continent.keyword": {"value": continent}}})
     if iconic_taxon != "" and iconic_taxon != "None":
+        # this is super inefficient but should be fine for a prototype
         filters["filter"].append(
             {"prefix": {"ancestry.keyword": {"value": iconic_taxon}}}
         )
@@ -93,18 +94,13 @@ def handle_search():
 
 
 @app.cli.command()
-def delete_index():
-    """Delete the elasticsearch index."""
-    es.delete_index(CONFIG["es_index_name"])
-
-@app.cli.command()
-def create_index():
-    """Create the elasticsearch index."""
-    es.create_index(CONFIG["es_index_name"])
-
-@app.cli.command()
 @click.argument("filename", required=True)
-def add_to_index(filename):
+def reindex(filename):
     """Add new data to elasticsearch index."""
+    # because we can't upsert into elastic search
+    # we'll create duplicates if we're not careful
+    # so instead we just recreate the index every time
+    # this is fine for a demo/prototype
+    es.delete_index(CONFIG["es_index_name"])
+    es.create_index(CONFIG["es_index_name"])
     es.add_to_index(CONFIG["es_index_name"], filename)
-
