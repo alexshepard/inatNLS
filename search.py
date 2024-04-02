@@ -123,11 +123,6 @@ class Search:
                 num_docs, len(batch_insert_times), np.mean(batch_insert_times)
             )
         )
-        print(
-            "Index with {} documents created in {} milliseconds".format(
-                len(response["items"]), response["took"]
-            )
-        )
 
     def search(self, index_name, **query_args):
         return self.es.search(index=index_name, **query_args)
