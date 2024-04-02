@@ -99,7 +99,11 @@ class Search:
         with open(data_file, "r") as file:
             num_docs = len(file.readlines()) - 1
 
-        pbar = tqdm(total=num_docs)
+        pbar = tqdm(
+            total=num_docs,
+            bar_format="{l_bar}{bar:30}{r_bar}{bar:-30b}",
+            dynamic_ncols=True,
+        )
         with open(data_file) as csvfile:
             csvreader = csv.DictReader(csvfile)
             documents = []
