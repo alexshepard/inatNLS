@@ -77,11 +77,14 @@ class Search:
                 print("skipping {}".format(local_path))
                 continue
 
-            # need to embed in try catch and skip when we can't get an image
-            img = Image.open(local_path)
-            img_emb = self.get_embedding(img)
-            operations.append({"index": {"_index": index_name}})
-            operations.append({**document, "embedding": img_emb})
+            try:
+                img = Image.open(local_path)
+                img_emb = self.get_embedding(img)
+                operations.append({"index": {"_index": index_name}})
+                operations.append({**document, "embedding": img_emb})
+            except:
+                print("couldn't open or encode {}".format(local_path))
+                continue
 
             pbar.update(1)
 
