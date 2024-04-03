@@ -47,12 +47,6 @@ class Search:
             },
         )
 
-    def insert_document(self, document, index_name):
-        return self.es.index(
-            index=index_name,
-            document={**document, "embedding": self.get_embedding(document["summary"])},
-        )
-
     def insert_documents(self, documents, index_name, pbar):
         batch_insert_times = []
 
@@ -130,9 +124,6 @@ class Search:
 
     def search(self, index_name, **query_args):
         return self.es.search(index=index_name, **query_args)
-
-    def retrieve_document(self, index_name, id):
-        return self.es.get(index=index_name, id=id)
 
     def path_for_photo_id(self, base_dir, photo_id):
         msg = str(photo_id).encode("utf-8")
