@@ -39,7 +39,11 @@ continent_choices = [
 
 @app.get("/")
 def index():
-    return render_template("index.html")
+    return render_template(
+        "index.html",
+        continent_choices=continent_choices,
+        iconic_taxa=iconic_taxa,
+    )
 
 
 @app.post("/")
