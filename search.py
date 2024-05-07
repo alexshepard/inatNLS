@@ -12,16 +12,16 @@ import requests
 from sentence_transformers import SentenceTransformer
 from tqdm.auto import tqdm
 
-CONFIG = yaml.safe_load(open("config.yml"))
-
 
 class Search:
-    def __init__(self):
-        self.model = SentenceTransformer(CONFIG["model_name"])
+    def __init__(self, clip_model_name, image_cache_dir, insert_batch_size):
+        self.image_cache_path = Path(image_cache_dir)
+        self.insert_batch_size = insert_batch_size
+
+        self.model = SentenceTransformer(clip_model_name)
         self.es = Elasticsearch("http://localhost:9200")
-        self.image_cache_path = Path(CONFIG["image_cache_dir"])
+
         os.makedirs(self.image_cache_path, exist_ok=True)
-        client_info = self.es.info()
         print("Connected to Elasticsearch!")
 
     def get_embedding(self, text):
@@ -53,7 +53,7 @@ class Search:
         operations = []
         for document in documents:
             local_path = self.path_for_photo_id(
-                CONFIG["image_cache_dir"], document["photo_id"]
+                self.image_cache_path, document["photo_id"]
             )
 
             # if we don't have the image, try to download it
@@ -108,7 +108,7 @@ class Search:
                 documents.append(row)
 
                 # insert in batches
-                if len(documents) == CONFIG["insert_batch_size"]:
+                if len(documents) == self.insert_batch_size:
                     response = self.insert_documents(documents, index_name, pbar)
                     batch_insert_times.append(response["took"])
                     documents = []

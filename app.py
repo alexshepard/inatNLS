@@ -1,13 +1,27 @@
 import click
 from flask import Flask, render_template, request
-import yaml
+from config import Config
 
 from search import Search
 
-CONFIG = yaml.safe_load(open("config.yml"))
 
-app = Flask(__name__)
-es = Search()
+def create_app():
+    app = Flask(__name__)
+    app_config = Config.load_config()
+    app.config.update(app_config)
+
+    search = Search(
+        app.config["CLIP_MODEL_NAME"],
+        app.config["IMAGE_CACHE_DIR"],
+        app.config["INSERT_BATCH_SIZE"],
+    )
+    app.search = search
+
+    return app
+
+
+app = create_app()
+
 
 iconic_taxa = {
     "48460": "Life",
@@ -49,7 +63,7 @@ def index():
 @app.post("/")
 def handle_search():
     query = request.form.get("query", "")
-    query_vector = es.get_embedding(query)
+    query_vector = app.search.get_embedding(query)
 
     login = request.form.get("login", "")
     taxon_name = request.form.get("taxon_name", "")
@@ -69,16 +83,16 @@ def handle_search():
             {"prefix": {"ancestry.keyword": {"value": iconic_taxon}}}
         )
 
-    results = es.search(
-        index_name=CONFIG["es_index_name"],
+    results = app.search.search(
+        index_name=app.config["ES_INDEX_NAME"],
         knn={
             "field": "embedding",
             "query_vector": query_vector,
-            "k": CONFIG["knn"]["k"],
-            "num_candidates": CONFIG["knn"]["num_candidates"],
+            "k": app.config["KNN"]["K"],
+            "num_candidates": app.config["KNN"]["NUM_CANDIDATES"],
             **filters,
         },
-        size=CONFIG["knn"]["k"],
+        size=app.config["KNN"]["K"],
         from_=0,
     )
 
@@ -105,6 +119,6 @@ def reindex(filename):
     # we'll create duplicates if we're not careful
     # so instead we just recreate the index every time
     # this is fine for a demo/prototype
-    es.delete_index(CONFIG["es_index_name"])
-    es.create_index(CONFIG["es_index_name"])
-    es.add_to_index(CONFIG["es_index_name"], filename)
+    app.search.delete_index(app.config["ES_INDEX_NAME"])
+    app.search.create_index(app.config["ES_INDEX_NAME"])
+    app.search.add_to_index(app.config["ES_INDEX_NAME"], filename)

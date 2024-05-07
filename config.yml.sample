@@ -1,9 +1,26 @@
-es_index_name: "inat-photos-index"
-model_name: "clip-ViT-B-32"
-image_cache_dir: "/data-ssd2/alex/images"
-insert_batch_size: 200
+default:
+  SECRET_KEY: "default-secret-key"
+  ES_INDEX_NAME: "default-index-name"
+  CLIP_MODEL_NAME: "clip-ViT-B-32"
+  IMAGE-CACHE_DIR: "images/"
+  INSERT_BATCH_SIZE: 200
+  KNN:
+    K: 10
+    NUM_CANDIDATES: 100
 
-knn:
-  k: 10
-  num_candidates: 100
+development:
+  SECRET_KEY: "dev-secret-key"
+  DEBUG: true
+  ES_INDEX_NAME: "inat-photos-index-dev"
+
+testing:
+  SECRET_KEY: "test-secret-key"
+  TESTING: true
+  ES_INDEX_NAME: "inat-photos-index-test"
+
+production:
+  SECRET_KEY: "production-secret-key"
+  DEBUG: false
+  ES_INDEX_NAME: "inat-photos-index-production"
+
 
