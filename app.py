@@ -5,9 +5,12 @@ from flask import Flask, render_template, request
 
 from config import Config
 from data import iconic_taxa, continent_choices
+from esManager import ElasticSearchManager
+from imageManager import ImageManager
+from ingestionService import IngestionService
+from embeddingModel import EmbeddingModel
 from requestFormatter import RequestFormatter
-from search import Search, SearchService
-
+from searchService import SearchService
 
 logging.basicConfig(
     level=logging.WARNING, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -19,17 +22,26 @@ def create_app():
     app_config = Config.load_config()
     app.config.update(app_config)
 
-    search = Search(
-        app.config["CLIP_MODEL_NAME"],
-        app.config["IMAGE_CACHE_DIR"],
-        app.config["INSERT_BATCH_SIZE"],
+    embedding_model = EmbeddingModel(
+        app.config["CLIP_MODEL_NAME"]
     )
-    app.search = search
+    # TODO: pass in ES config from app.config
+    es_manager = ElasticSearchManager()
+    image_manager = ImageManager(cache_dir=app.config["IMAGE_CACHE_DIR"])
 
-    searchService = SearchService(
-        app.config, search
+    search_service = SearchService(
+        app.config,
+        embedding_model=embedding_model,
+        es_manager=es_manager,
     )
-    app.searchService = searchService
+
+    ingestion_service = IngestionService(
+        embedding_model=embedding_model,
+        es_manager=es_manager,
+        image_manager=image_manager,
+    )
+    app.search_service = search_service
+    app.ingestion_service = ingestion_service
 
     handler = logging.StreamHandler()
     rf = RequestFormatter(
@@ -60,7 +72,7 @@ def handle_search():
     continent = request.form.get("continent", "")
     iconic_taxon = request.form.get("iconic_taxon", "")
 
-    results = app.searchService.perform_search(
+    results = app.search_service.perform_search(
         query, login, continent, iconic_taxon
     )
 
@@ -82,10 +94,6 @@ def handle_search():
 @click.argument("filename", required=True)
 def reindex(filename):
     """Add new data to elasticsearch index."""
-    # because we can't upsert into elastic search
-    # we'll create duplicates if we're not careful
-    # so instead we just recreate the index every time
-    # this is fine for a demo/prototype
-    app.search.delete_index(app.config["ES_INDEX_NAME"])
-    app.search.create_index(app.config["ES_INDEX_NAME"])
-    app.search.add_to_index(app.config["ES_INDEX_NAME"], filename)
+    app.ingestion_service.ingest_data(
+        filename, app.config["ES_INDEX_NAME"]
+    )
