@@ -2,7 +2,7 @@ default:
   SECRET_KEY: "default-secret-key"
   ES_INDEX_NAME: "default-index-name"
   CLIP_MODEL_NAME: "clip-ViT-B-32"
-  IMAGE-CACHE_DIR: "images/"
+  IMAGE_CACHE_DIR: "images/"
   INSERT_BATCH_SIZE: 200
   KNN:
     K: 10
