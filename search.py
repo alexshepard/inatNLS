@@ -9,11 +9,15 @@ import numpy as np
 from PIL import Image
 import requests
 from sentence_transformers import SentenceTransformer
-from tqdm.auto import tqdm
+
+
+logger = logging.getLogger(__name__)
+logger.level = logging.DEBUG
 
 
 class Search:
     def __init__(self, clip_model_name, image_cache_dir, insert_batch_size):
+
         self.image_cache_path = Path(image_cache_dir)
         self.insert_batch_size = insert_batch_size
 
@@ -21,14 +25,9 @@ class Search:
         self.es = Elasticsearch("http://localhost:9200")
 
         os.makedirs(self.image_cache_path, exist_ok=True)
-        print("Connected to Elasticsearch!")
+        logger.info("Connected to Elasticsearch!")
 
     def get_embedding(self, text):
-        # this is ugly but otherwise pytorch is logging constantly
-        # haven't been able to track down which logger to disable
-        for key in logging.Logger.manager.loggerDict:
-            logging.getLogger(key).disabled = True
-
         return self.model.encode(text)
 
     def delete_index(self, index_name):
@@ -46,7 +45,7 @@ class Search:
             },
         )
 
-    def insert_documents(self, documents, index_name, pbar):
+    def insert_documents(self, documents, index_name):
         batch_insert_times = []
 
         operations = []
@@ -73,7 +72,9 @@ class Search:
 
             # if we still don't have the image, skip it
             if not os.path.exists(local_path):
-                print("skipping {}".format(local_path))
+                logger.warn("can't download {}, skipping {}".format(
+                    photo_url, local_path
+                ))
                 continue
 
             try:
@@ -82,10 +83,8 @@ class Search:
                 operations.append({"index": {"_index": index_name}})
                 operations.append({**document, "embedding": img_emb})
             except:
-                print("couldn't open or encode {}".format(local_path))
+                logger.error("couldn't open or encode {}".format(local_path))
                 continue
-
-            pbar.update(1)
 
         return self.es.bulk(operations=operations)
 
@@ -95,31 +94,33 @@ class Search:
         with open(data_file, "r") as file:
             num_docs = len(file.readlines()) - 1
 
-        pbar = tqdm(
-            total=num_docs,
-            bar_format="{l_bar}{bar:30}{r_bar}{bar:-30b}",
-            dynamic_ncols=True,
-        )
         with open(data_file) as csvfile:
             csvreader = csv.DictReader(csvfile)
             documents = []
+            seen = 0
             for row in csvreader:
+                seen += 1
                 documents.append(row)
 
                 # insert in batches
                 if len(documents) == self.insert_batch_size:
                     response = self.insert_documents(
-                        documents, index_name, pbar)
+                        documents, index_name
+                    )
                     batch_insert_times.append(response["took"])
                     documents = []
 
+                    logger.info(
+                        "inserted batch of {}, total {}, in {} ms".format(
+                            self.insert_batch_size, seen, response["took"]
+                        )
+                    )
+
         # insert anything at the end
-        response = self.insert_documents(documents, index_name, pbar)
+        response = self.insert_documents(documents, index_name)
         batch_insert_times.append(response["took"])
 
-        pbar.close()
-
-        print(
+        logger.info(
             "indexed {} documents in {} batches with an average of {} ms per batch".format(
                 num_docs, len(batch_insert_times), np.mean(batch_insert_times)
             )

@@ -1,8 +1,15 @@
+import logging
+
 import click
 from flask import Flask, render_template, request
 
 from config import Config
 from search import Search
+from requestFormatter import RequestFormatter
+
+logging.basicConfig(
+    level=logging.WARNING, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
 
 def create_app():
@@ -16,6 +23,13 @@ def create_app():
         app.config["INSERT_BATCH_SIZE"],
     )
     app.search = search
+
+    handler = logging.StreamHandler()
+    rf = RequestFormatter(
+        "[%(asctime)s] %(remote_addr)s requested %(url)s - %(levelname)s - %(message)s"
+    )
+    handler.setFormatter(rf)
+    app.logger.addHandler(handler)
 
     return app
 
