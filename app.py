@@ -56,22 +56,18 @@ def index():
 @app.post("/")
 def handle_search():
     query = request.form.get("query", "")
-    query_vector = app.search.get_embedding(query)
-
     login = request.form.get("login", "")
-    taxon_name = request.form.get("taxon_name", "")
     continent = request.form.get("continent", "")
     iconic_taxon = request.form.get("iconic_taxon", "")
 
     results = app.searchService.perform_search(
-        query, login, taxon_name, continent, iconic_taxon
+        query, login, continent, iconic_taxon
     )
 
     return render_template(
         "index.html",
         query=query,
         login=login,
-        taxon_name=taxon_name,
         continent=continent,
         continent_choices=continent_choices,
         iconic_taxon=iconic_taxon,

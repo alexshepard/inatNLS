@@ -20,10 +20,10 @@ class SearchService:
         self.config = config
         self.search = search
 
-    def perform_search(self, query, login, taxon_name, continent, iconic_taxon):
+    def perform_search(self, query, login, continent, iconic_taxon):
         query_vector = self.search.get_embedding(query)
         filters = self.build_filters(
-            login, taxon_name, continent, iconic_taxon)
+            login, continent, iconic_taxon)
         results = self.search.search(
             index_name=self.config["ES_INDEX_NAME"],
             knn={
@@ -38,11 +38,8 @@ class SearchService:
         )
         return results
 
-    def build_filters(self, login, taxon_name, continent, iconic_taxon):
+    def build_filters(self, login, continent, iconic_taxon):
         filters = {"filter": []}
-        if taxon_name:
-            filters["filter"].append(
-                {"term": {"name.keyword": {"value": taxon_name}}})
         if login:
             filters["filter"].append(
                 {"term": {"observer_login.keyword": {"value": login}}})
