@@ -6,7 +6,7 @@ from flask import Flask, render_template, request
 from config import Config
 from data import iconic_taxa, continent_choices
 from requestFormatter import RequestFormatter
-from search import Search
+from search import Search, SearchService
 
 
 logging.basicConfig(
@@ -25,6 +25,11 @@ def create_app():
         app.config["INSERT_BATCH_SIZE"],
     )
     app.search = search
+
+    searchService = SearchService(
+        app.config, search
+    )
+    app.searchService = searchService
 
     handler = logging.StreamHandler()
     rf = RequestFormatter(
@@ -58,33 +63,8 @@ def handle_search():
     continent = request.form.get("continent", "")
     iconic_taxon = request.form.get("iconic_taxon", "")
 
-    filters = {"filter": []}
-    if taxon_name != "":
-        filters["filter"].append(
-            {"term": {"name.keyword": {"value": taxon_name}}})
-    if login != "":
-        filters["filter"].append(
-            {"term": {"observer_login.keyword": {"value": login}}})
-    if continent != "" and continent != "Worldwide":
-        filters["filter"].append(
-            {"term": {"continent.keyword": {"value": continent}}})
-    if iconic_taxon != "" and iconic_taxon != "None":
-        # this is super inefficient but should be fine for a prototype
-        filters["filter"].append(
-            {"prefix": {"ancestry.keyword": {"value": iconic_taxon}}}
-        )
-
-    results = app.search.search(
-        index_name=app.config["ES_INDEX_NAME"],
-        knn={
-            "field": "embedding",
-            "query_vector": query_vector,
-            "k": app.config["KNN"]["K"],
-            "num_candidates": app.config["KNN"]["NUM_CANDIDATES"],
-            **filters,
-        },
-        size=app.config["KNN"]["K"],
-        from_=0,
+    results = app.searchService.perform_search(
+        query, login, taxon_name, continent, iconic_taxon
     )
 
     return render_template(
