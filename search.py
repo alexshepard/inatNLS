@@ -3,7 +3,6 @@ import hashlib
 import logging
 import os
 from pathlib import Path
-import yaml
 
 from elasticsearch import Elasticsearch
 import numpy as np
@@ -109,7 +108,8 @@ class Search:
 
                 # insert in batches
                 if len(documents) == self.insert_batch_size:
-                    response = self.insert_documents(documents, index_name, pbar)
+                    response = self.insert_documents(
+                        documents, index_name, pbar)
                     batch_insert_times.append(response["took"])
                     documents = []
 

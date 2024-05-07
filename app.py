@@ -1,7 +1,7 @@
 import click
 from flask import Flask, render_template, request
-from config import Config
 
+from config import Config
 from search import Search
 
 
@@ -72,11 +72,14 @@ def handle_search():
 
     filters = {"filter": []}
     if taxon_name != "":
-        filters["filter"].append({"term": {"name.keyword": {"value": taxon_name}}})
+        filters["filter"].append(
+            {"term": {"name.keyword": {"value": taxon_name}}})
     if login != "":
-        filters["filter"].append({"term": {"observer_login.keyword": {"value": login}}})
+        filters["filter"].append(
+            {"term": {"observer_login.keyword": {"value": login}}})
     if continent != "" and continent != "Worldwide":
-        filters["filter"].append({"term": {"continent.keyword": {"value": continent}}})
+        filters["filter"].append(
+            {"term": {"continent.keyword": {"value": continent}}})
     if iconic_taxon != "" and iconic_taxon != "None":
         # this is super inefficient but should be fine for a prototype
         filters["filter"].append(
