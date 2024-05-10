@@ -4,6 +4,7 @@
 2. make a python venv and activate it
 3. `pip install -r requirements.txt`
 4. copy `config.yml.sample` to `config.yml` and edit it
-5. `flask reindex`  # this will take a while, mostly due to photo downloading
-6. `flask run`
-7. visit localhost:5001 in your browser
+5. download a mediapipe face detector model from google: https://developers.google.com/mediapipe/solutions/vision/face_detector#models - I'm using the BlazeFace (short-range) since that's the only model available at the time of this writing.
+6. `flask reindex complete_1k_obs_sample.csv`  # this will take a while, mostly due to photo downloading
+7. `flask run`
+8. visit localhost:5001 in your browser
