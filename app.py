@@ -11,6 +11,7 @@ from ingestionService import IngestionService
 from embeddingModel import EmbeddingModel
 from requestFormatter import RequestFormatter
 from searchService import SearchService
+from humanDetectionModel import HumanDetectionModel
 
 logging.basicConfig(
     level=logging.WARNING, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -28,6 +29,10 @@ def create_app():
     # TODO: pass in ES config from app.config
     es_manager = ElasticSearchManager()
     image_manager = ImageManager(cache_dir=app.config["IMAGE_CACHE_DIR"])
+    human_detection_model = HumanDetectionModel(
+        model_path=app.config["MEDIAPIPE_HUMAN_DETECT_MODEL"],
+        threshold=app.config["HUMAN_EXCLUSION_THRESHOLD"]
+    )
 
     search_service = SearchService(
         app.config,
@@ -39,6 +44,7 @@ def create_app():
         embedding_model=embedding_model,
         es_manager=es_manager,
         image_manager=image_manager,
+        human_detection_model=human_detection_model,
     )
     app.search_service = search_service
     app.ingestion_service = ingestion_service

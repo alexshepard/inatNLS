@@ -2,6 +2,8 @@ default:
   SECRET_KEY: "default-secret-key"
   ES_INDEX_NAME: "default-index-name"
   CLIP_MODEL_NAME: "clip-ViT-B-32"
+  MEDIAPIPE_HUMAN_DETECT_MODEL: "blaze_face_short_range.tflite"
+  HUMAN_EXCLUSION_THRESHOLD: 0.6
   IMAGE_CACHE_DIR: "images/"
   INSERT_BATCH_SIZE: 200
   KNN:

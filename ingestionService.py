@@ -7,10 +7,13 @@ logger.level = logging.DEBUG
 
 
 class IngestionService:
-    def __init__(self, image_manager, es_manager, embedding_model):
+    def __init__(
+        self, image_manager, es_manager, embedding_model, human_detection_model
+    ):
         self.image_manager = image_manager
         self.es_manager = es_manager
         self.embedding_model = embedding_model
+        self.human_detection_model = human_detection_model
 
     def ingest_data(self, data_file, index_name):
         # because we can't upsert into elastic search
@@ -44,6 +47,11 @@ class IngestionService:
                         continue
 
                 try:
+                    # exclude photos where we can find a human face
+                    if self.human_detection_model.detect_faces(local_path):
+                        logger.info("detected human face in {} above threshold, skipping.".format(local_path))
+                        continue
+
                     img = self.image_manager.open_image(local_path)
                     img_emb = self.embedding_model.get_embedding(img)
                     document = {
